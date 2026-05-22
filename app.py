@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import os
+import subprocess
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -228,3 +229,26 @@ st.subheader("📊 Base de Datos Local")
 actuales = cargar_datos()
 if actuales:
     st.dataframe(pd.DataFrame(actuales).drop(columns=["Ruta Imagen Local"], errors="ignore"))
+
+# SECCIÓN 4: PANEL DE CONTROL LATERAL (SIDEBAR PARA GITHUB)
+with st.sidebar:
+    st.header("⚙️ Sincronización a la Nube")
+    st.write("Presiona este botón para subir los últimos cambios a tu repositorio público de GitHub y actualizar tu Google Sheets.")
+    
+    if st.button("🔄 Subir a GitHub (Git Push)"):
+        with st.spinner("Empaquetando y subiendo archivos..."):
+            try:
+                # Ejecuta los comandos de consola desde Python
+                subprocess.run(["git", "add", "."], check=True, capture_output=True)
+                
+                # El commit puede fallar intencionalmente si no hay cambios, por eso no usamos check=True aquí
+                subprocess.run(["git", "commit", "-m", f"Actualización automática - {datetime.now().strftime('%Y-%m-%d %H:%M')}"], capture_output=True)
+                
+                # Push a GitHub
+                proceso_push = subprocess.run(["git", "push", "origin", "main"], check=True, capture_output=True, text=True)
+                
+                st.success("¡Subido con éxito! Tu Google Sheets se actualizará pronto.")
+            except subprocess.CalledProcessError as e:
+                st.error(f"Error al subir: {e.stderr}")
+            except Exception as e:
+                st.error(f"Error inesperado: {str(e)}")
